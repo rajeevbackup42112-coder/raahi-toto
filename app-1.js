@@ -1,5 +1,13 @@
 
 const locations = ['Gomoh Railway Station','Dhanbad Railway Station','Bank More'];
+const demoDistances = {
+  'Gomoh Railway Station|Dhanbad Railway Station':35,
+  'Dhanbad Railway Station|Gomoh Railway Station':35,
+  'Gomoh Railway Station|Bank More':37,
+  'Bank More|Gomoh Railway Station':37,
+  'Dhanbad Railway Station|Bank More':2.8,
+  'Bank More|Dhanbad Railway Station':2.8
+};
 const drivers = [
   {name:'Ravi Kumar',vehicle:'Green ToTo',type:'toto',seats:4,rating:4.8,distance:'1.2 km away'},
   {name:'Imran Ansari',vehicle:'White Dzire',type:'car',seats:4,rating:4.9,distance:'2.8 km away'},
@@ -11,6 +19,10 @@ const passengers = ['Priya','Amit','Neha','Rohit','Sana'];
 let state = {
   role:'passenger', loggedIn:true, passengerStep:'home', market:'Gomoh',
   payment:{Gomoh:'driver',Dhanbad:'raahi'},
+  totoPricing:{
+    Gomoh:{shortKm:3,shortFare:50,midKm:5,midFare:100},
+    Dhanbad:{shortKm:3,shortFare:50,midKm:5,midFare:100}
+  },
   from:locations[0], to:locations[1], vehicle:'toto', seats:4, offer:180, chosen:null,
   activeDriver:'Ravi Kumar', driverOnline:true, driverLocation:locations[2],
   driverReplies:{}, counterDraft:210, paymentConfirmed:{}
@@ -27,10 +39,23 @@ function driverOptions(value){return drivers.map(d=>`<option value="${d.name}" $
 function activeDriver(){return drivers.find(d=>d.name===state.activeDriver) || drivers[0]}
 function isDriverEligible(d){return d.type===state.vehicle && (state.vehicle==='toto' || d.seats>=state.seats)}
 function rideLabel(){return state.vehicle==='toto' ? 'ToTo' : `${state.seats}-seat car`}
+function routeDistanceKm(){return demoDistances[`${state.from}|${state.to}`] ?? 6.5}
+function totoFareRule(){
+  const distance=routeDistanceKm();
+  const policy=state.totoPricing[state.market];
+  if(state.vehicle!=='toto') return {mode:'negotiation',distance,amount:null,label:'Negotiation'};
+  if(distance<=policy.shortKm) return {mode:'fixed',distance,amount:policy.shortFare,label:`0–${policy.shortKm} km`};
+  if(distance<=policy.midKm) return {mode:'fixed',distance,amount:policy.midFare,label:`>${policy.shortKm}–${policy.midKm} km`};
+  return {mode:'negotiation',distance,amount:null,label:`>${policy.midKm} km`};
+}
+function isFixedTotoFare(){return state.vehicle==='toto' && totoFareRule().mode==='fixed'}
+function currentFare(){const rule=totoFareRule(); return rule.mode==='fixed'?rule.amount:state.offer}
+function resetRideResponses(){state.driverReplies={};state.chosen=null;state.paymentConfirmed={}}
 function replyFor(d,index){
   const explicit=state.driverReplies[d.name];
   if(explicit) return explicit;
   if(d.name===state.activeDriver) return {status:'pending',amount:null};
+  if(isFixedTotoFare()) return index===0 ? {status:'accepted',amount:currentFare()} : {status:'pending',amount:null};
   if(index===0) return {status:'accepted',amount:state.offer};
   if(index===1) return {status:'counter',amount:state.offer+30};
   return {status:'pending',amount:null};
