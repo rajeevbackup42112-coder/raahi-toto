@@ -30,14 +30,14 @@ let state = {
   from:locations[0], to:locations[1], vehicle:'toto', seats:4, offer:180,
   engagement:null, ride:null, excludedDrivers:[], noDriver:false,
   activeDriver:'Ravi Kumar', driverOnline:true, driverLocation:locations[2],
-  counterDraft:210, paymentConfirmed:{}
+  counterDraft:210, paymentConfirmed:{}, raahiPaymentPaid:{}
 };
 const app = document.getElementById('app');
 
 function pill(text,tone='neutral'){return `<span class="pill ${tone}">${text}</span>`}
 function avatar(name,cls=''){const initials=name.split(' ').map(x=>x[0]).join('').slice(0,2);return `<div class="avatar ${cls}">${initials}</div>`}
 function section(title,hint=''){return `<div class="section-title"><h2>${title}</h2>${hint?`<p>${hint}</p>`:''}</div>`}
-function routeCard(){return `<div class="feature-card mini-route"><div><span>●</span><strong>${state.from}</strong></div><div class="mini-route-line"></div><div><span>◆</span><strong>${state.to}</strong></div>${state.passengerStep==='home'?'':`<button data-action="edit-route">Edit</button>`}</div>`}
+function routeCard(){return `<div class="feature-card mini-route"><div><span>●</span><strong>${state.from}</strong></div><div class="mini-route-line"></div><div><span>◆</span><strong>${state.to}</strong></div>${state.passengerStep==='searching'?`<button data-action="edit-route">Cancel & edit</button>`:''}</div>`}
 function mapPreview(){return `<div class="map-preview"><div class="map-grid"></div><div class="map-route"></div><div class="pin pickup">●</div><div class="pin drop">●</div><div class="map-label pickup-label">${state.from}</div><div class="map-label drop-label">${state.to}</div><div class="map-note">Map placeholder • real maps later</div></div>`}
 function locationOptions(value){return locations.map(x=>`<option ${x===value?'selected':''}>${x}</option>`).join('')}
 function driverOptions(value){return drivers.map(d=>`<option value="${d.name}" ${d.name===value?'selected':''}>${d.name} — ${d.vehicle}</option>`).join('')}
@@ -60,7 +60,7 @@ function currentFare(){const rule=totoFareRule(); return rule.mode==='fixed'?rul
 function compatibleDrivers(){return drivers.filter(isDriverEligible).sort((a,b)=>a.priority-b.priority)}
 function engagementDriver(){return state.engagement ? drivers.find(d=>d.name===state.engagement.driverName) : null}
 function resetRideResponses(){
-  state.engagement=null; state.ride=null; state.excludedDrivers=[]; state.noDriver=false; state.paymentConfirmed={};
+  state.engagement=null; state.ride=null; state.excludedDrivers=[]; state.noDriver=false; state.paymentConfirmed={}; state.raahiPaymentPaid={};
   if(state.passengerStep!=='home') state.passengerStep='home';
 }
 function matchNextDriver(){
