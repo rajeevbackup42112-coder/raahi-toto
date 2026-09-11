@@ -20,9 +20,17 @@ const drivers = [
   {name:'Deepak Singh',vehicle:'Silver Triber',type:'car',seats:6,rating:4.8,distance:'4.1 km away',priority:3}
 ];
 const passengers = ['Priya','Amit','Neha','Rohit','Sana'];
+const allDriverAuth=()=>Object.fromEntries(drivers.map(d=>[d.name,true]));
 let state = {
-  role:'passenger', loggedIn:true, passengerStep:'home', market:'Gomoh',
+  role:'passenger', loggedIn:true, passengerStep:'home', market:'Gomoh', adminPersona:'global', adminNotice:'',
   payment:{Gomoh:'driver',Dhanbad:'raahi'},
+  marketStatus:{Gomoh:'active',Dhanbad:'active'},
+  vehicleEnabled:{Gomoh:{toto:true,car:true},Dhanbad:{toto:true,car:true}},
+  proximity:{
+    Gomoh:{toto:[3,5,8],car:[5,8,12]},
+    Dhanbad:{toto:[3,5,8],car:[5,8,12]}
+  },
+  driverAuth:{Gomoh:allDriverAuth(),Dhanbad:allDriverAuth()},
   totoPricing:{
     Gomoh:{shortKm:3,shortFare:50,midKm:5,midFare:100},
     Dhanbad:{shortKm:3,shortFare:50,midKm:5,midFare:100}
@@ -44,7 +52,10 @@ function driverOptions(value){return drivers.map(d=>`<option value="${d.name}" $
 function activeDriver(){return drivers.find(d=>d.name===state.activeDriver) || drivers[0]}
 function marketForPickup(){return locationMarkets[state.from] || 'Gomoh'}
 function requestMarket(){return state.ride?.market || state.engagement?.market || marketForPickup()}
-function isDriverEligible(d){return d.type===state.vehicle && (state.vehicle==='toto' || d.seats>=state.seats)}
+function adminMarket(){return state.adminPersona==='gomoh'?'Gomoh':state.adminPersona==='dhanbad'?'Dhanbad':state.market}
+function isVehicleEnabled(vehicle,market=marketForPickup()){return Boolean(state.vehicleEnabled[market]?.[vehicle])}
+function marketAllowsRequest(){const m=marketForPickup();return state.marketStatus[m]==='active' && isVehicleEnabled(state.vehicle,m)}
+function isDriverEligible(d){const m=requestMarket();return d.type===state.vehicle && (state.vehicle==='toto' || d.seats>=state.seats) && state.driverAuth[m]?.[d.name]!==false}
 function rideLabel(){return state.vehicle==='toto' ? 'ToTo' : `${state.seats}-seat car`}
 function routeDistanceKm(){return demoDistances[`${state.from}|${state.to}`] ?? 6.5}
 function totoFareRule(){
@@ -71,6 +82,7 @@ function matchNextDriver(){
   state.counterDraft=Math.max(currentFare()+30,210);
 }
 function startPassengerRequest(){
+  if(!marketAllowsRequest()) return;
   state.excludedDrivers=[]; state.ride=null; state.noDriver=false; state.passengerStep='searching';
   matchNextDriver();
 }
