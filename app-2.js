@@ -39,6 +39,30 @@ function passengerBooked(){
  const d=state.ride;
  if(!d) return passengerHome();
  const direct=state.payment[d.market]==='driver';
- return `<div class="screen"><header class="app-header compact"><div><strong>Ride confirmed</strong><small>${d.name.split(' ')[0]} is on the way</small></div>${pill('Confirmed','good')}</header>${mapPreview()}<div class="content-stack"><div class="success-card"><div class="success-mark">✓</div><div><h2>${d.name}</h2><p>${d.vehicle} • ⭐ ${d.rating}</p></div><strong>₹${d.amount}</strong></div><div class="feature-card"><div class="route-line"><span class="route-dot green"></span><div><small>Pickup</small><strong>${state.from}</strong></div></div><div class="route-stem"></div><div class="route-line"><span class="route-dot dark"></span><div><small>Destination</small><strong>${state.to}</strong></div></div></div><div class="feature-card"><div class="row between"><div><small>Agreed fare</small><h3>${isFixedTotoFare()?'Fixed local fare':'Negotiated fare'}</h3></div>${pill('₹'+d.amount,'blue')}</div><p>${isFixedTotoFare()?`${d.market} policy fixed this fare.`:'This is the fare agreed during the one-driver engagement.'}</p></div><div class="feature-card payment-card"><div class="row between"><div><small>Payment method</small><h3>${direct?'Pay driver directly':'Pay Raahi'}</h3></div>${pill(direct?'Direct':'Raahi',direct?'warn':'blue')}</div><p>${direct?`After the ride, pay ₹${d.amount} to ${d.name.split(' ')[0]}. The driver confirms receipt.`:`Raahi will collect ₹${d.amount}. The exact payment timing will be finalized with the ride flow before backend work.`}</p></div><div class="waiting-banner"><span class="pulse-dot"></span><div><strong>${d.name.split(' ')[0]} is heading to your pickup</strong><small>Next we will finalize Arrived → Start ride → Complete ride interactions.</small></div></div></div></div>`;
+ const completed=d.status==='completed';
+ const statusCopy={
+   en_route:{title:'Ride confirmed',sub:`${d.name.split(' ')[0]} is on the way`,badge:'On the way',tone:'good'},
+   arrived:{title:'Your driver has arrived',sub:`Meet ${d.name.split(' ')[0]} at the pickup`,badge:'Arrived',tone:'good'},
+   in_progress:{title:'Ride in progress',sub:`Heading to ${state.to}`,badge:'In ride',tone:'blue'},
+   completed:{title:'Ride completed',sub:'You have arrived',badge:'Completed',tone:'good'}
+ }[d.status] || {title:'Ride confirmed',sub:`${d.name.split(' ')[0]} is on the way`,badge:'Confirmed',tone:'good'};
+ const progress = d.status==='en_route'
+   ? `<div class="waiting-banner"><span class="pulse-dot"></span><div><strong>${d.name.split(' ')[0]} is heading to your pickup</strong><small>${d.distance} in this demo.</small></div></div>`
+   : d.status==='arrived'
+   ? `<div class="assigned-banner"><small>DRIVER ARRIVED</small><h3>${d.name.split(' ')[0]} is waiting at your pickup</h3><p>Meet the driver and board when ready.</p></div>`
+   : d.status==='in_progress'
+   ? `<div class="waiting-banner"><span class="pulse-dot"></span><div><strong>Your ride is underway</strong><small>Fare remains ₹${d.amount}. Destination: ${state.to}.</small></div></div>`
+   : `<div class="assigned-banner"><small>RIDE COMPLETE</small><h3>You’ve arrived</h3><p>The ride lifecycle is complete. Payment is handled separately below.</p></div>`;
+ let paymentCard='';
+ if(!completed){
+   paymentCard=`<div class="feature-card payment-card"><div class="row between"><div><small>Payment method</small><h3>${direct?'Pay driver directly':'Pay Raahi'}</h3></div>${pill(direct?'Direct':'Raahi',direct?'warn':'blue')}</div><p>${direct?`After the ride, pay ₹${d.amount} to ${d.name.split(' ')[0]}.`:`Raahi will collect ₹${d.amount} in the payment step.`}</p></div>`;
+ } else if(direct){
+   const confirmed=Boolean(state.paymentConfirmed[d.name]);
+   paymentCard=`<div class="feature-card payment-card"><div class="row between"><div><small>Payment</small><h3>${confirmed?'Payment confirmed':'Pay driver directly'}</h3></div>${pill(confirmed?'Confirmed':'Direct',confirmed?'good':'warn')}</div><p>${confirmed?`${d.name.split(' ')[0]} confirmed receiving ₹${d.amount}.`:`Pay ₹${d.amount} directly to ${d.name.split(' ')[0]}. Only the driver can confirm receipt in Raahi.`}</p></div>`;
+ } else {
+   const paid=Boolean(state.raahiPaymentPaid[d.name]);
+   paymentCard=`<div class="feature-card payment-card"><div class="row between"><div><small>Payment</small><h3>${paid?'Paid to Raahi':'Pay Raahi'}</h3></div>${pill(paid?'Confirmed':'Raahi',paid?'good':'blue')}</div><p>${paid?`Raahi received ₹${d.amount}. Driver settlement is separate.`:`Pay the agreed ₹${d.amount} to Raahi.`}</p>${paid?'':`<button class="primary full" data-action="pay-raahi">Pay ₹${d.amount} to Raahi</button>`}</div>`;
+ }
+ return `<div class="screen"><header class="app-header compact"><div><strong>${statusCopy.title}</strong><small>${statusCopy.sub}</small></div>${pill(statusCopy.badge,statusCopy.tone)}</header>${completed?'':mapPreview()}<div class="content-stack"><div class="success-card"><div class="success-mark">✓</div><div><h2>${d.name}</h2><p>${d.vehicle} • ⭐ ${d.rating}</p></div><strong>₹${d.amount}</strong></div><div class="feature-card"><div class="route-line"><span class="route-dot green"></span><div><small>Pickup</small><strong>${state.from}</strong></div></div><div class="route-stem"></div><div class="route-line"><span class="route-dot dark"></span><div><small>Destination</small><strong>${state.to}</strong></div></div></div>${progress}${paymentCard}${completed?`<button class="secondary full" data-action="new-ride">Book another ride</button>`:''}</div></div>`;
 }
 function passenger(){return state.passengerStep==='home'?passengerHome():state.passengerStep==='searching'?passengerSearching():passengerBooked()}
