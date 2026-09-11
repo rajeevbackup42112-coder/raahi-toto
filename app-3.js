@@ -2,7 +2,18 @@ function driverRequestCard(d){
  const e=state.engagement;
  const rideAssigned=state.ride?.name===d.name;
  if(rideAssigned){
-   return `<div class="assigned-banner"><small>RIDE CONFIRMED</small><h3>You are matched with Priya</h3><p>${state.from} → ${state.to} • Fare ₹${state.ride.amount}</p></div>`;
+   const r=state.ride;
+   const direct=state.payment[r.market]==='driver';
+   if(r.status==='en_route'){
+     return `<div class="request-card"><div class="request-top"><div><small>CONFIRMED RIDE</small><h1>₹${r.amount}</h1></div>${pill('On the way','good')}</div><div class="route-summary"><div><span class="route-dot green"></span><div><small>Pickup</small><strong>${state.from}</strong></div></div><div class="stem"></div><div><span class="route-dot dark"></span><div><small>Drop</small><strong>${state.to}</strong></div></div></div><div class="request-meta"><span>👤 Priya</span><span>📍 ${d.distance.replace(' away','')} pickup</span><span>${direct?'💵 Passenger pays you':'R Passenger pays Raahi'}</span></div><button class="primary full big" data-action="driver-arrived">I’ve arrived</button></div>`;
+   }
+   if(r.status==='arrived'){
+     return `<div class="request-card"><div class="request-top"><div><small>AT PICKUP</small><h1>Priya</h1></div>${pill('Arrived','good')}</div><div class="route-summary"><div><span class="route-dot green"></span><div><small>Pickup</small><strong>${state.from}</strong></div></div><div class="stem"></div><div><span class="route-dot dark"></span><div><small>Destination</small><strong>${state.to}</strong></div></div></div><div class="accepted-box"><span>✓</span><div><strong>You marked Arrived</strong><small>Start only when the passenger is onboard.</small></div></div><button class="primary full big" data-action="start-ride">Start ride</button></div>`;
+   }
+   if(r.status==='in_progress'){
+     return `<div class="request-card"><div class="request-top"><div><small>RIDE IN PROGRESS</small><h1>₹${r.amount}</h1></div>${pill('In ride','blue')}</div><div class="route-summary"><div><span class="route-dot green"></span><div><small>From</small><strong>${state.from}</strong></div></div><div class="stem"></div><div><span class="route-dot dark"></span><div><small>To</small><strong>${state.to}</strong></div></div></div><p>Complete the ride only after reaching the passenger’s destination.</p><button class="primary full big" data-action="complete-ride">Complete ride</button></div>`;
+   }
+   return `<div class="assigned-banner"><small>RIDE COMPLETE</small><h3>Priya’s ride is completed</h3><p>${state.from} → ${state.to} • Fare ₹${r.amount}</p></div>`;
  }
  if(!e || e.driverName!==d.name){
    return `<div class="empty-state"><span>◌</span><h2>No request for you right now</h2><p>You remain available in the driver pool. Raahi engages only one driver with a passenger at a time.</p></div>`;
@@ -23,21 +34,26 @@ function driverRequestCard(d){
 }
 
 function driverPaymentCard(d){
- if(state.ride?.name!==d.name) return '';
+ if(state.ride?.name!==d.name || state.ride.status!=='completed') return '';
  const market=state.ride.market;
  const direct=state.payment[market]==='driver';
  if(direct){
    const confirmed=Boolean(state.paymentConfirmed[d.name]);
-   return `<div class="feature-card payment-card"><div class="row between"><div><small>${market} payment rule</small><h3>Passenger pays you directly</h3></div>${pill('Direct','warn')}</div><p>After the ride, confirm only when you have actually received payment.</p><button class="${confirmed?'secondary':'primary'} full" data-action="confirm-payment">${confirmed?'✓ Payment marked received':'Confirm payment received'}</button></div>`;
+   return `<div class="feature-card payment-card"><div class="row between"><div><small>${market} payment rule</small><h3>${confirmed?'Payment received':'Passenger pays you directly'}</h3></div>${pill(confirmed?'Confirmed':'Direct',confirmed?'good':'warn')}</div><p>${confirmed?`You confirmed receiving ₹${state.ride.amount}.`:`Confirm only after you actually receive ₹${state.ride.amount} from Priya.`}</p><button class="${confirmed?'secondary':'primary'} full" data-action="confirm-payment" ${confirmed?'disabled':''}>${confirmed?'✓ Payment marked received':'Confirm payment received'}</button></div>`;
  }
- return `<div class="feature-card payment-card"><div class="row between"><div><small>${market} payment rule</small><h3>Passenger pays Raahi</h3></div>${pill('Raahi','blue')}</div><p>Do not collect the fare from the passenger. Raahi handles collection and driver settlement separately.</p></div>`;
+ const paid=Boolean(state.raahiPaymentPaid[d.name]);
+ return `<div class="feature-card payment-card"><div class="row between"><div><small>${market} payment rule</small><h3>Passenger pays Raahi</h3></div>${pill(paid?'Passenger paid':'Raahi','blue')}</div><p>${paid?'Raahi has recorded the passenger payment. Driver settlement remains separate.':'Do not collect the fare from Priya. Raahi handles collection and settlement separately.'}</p></div>`;
 }
 
 function driver(){
  const d=activeDriver();
  const isEngaged=state.engagement?.driverName===d.name && !state.ride;
- const heading=state.ride?.name===d.name?'Your ride is confirmed':isEngaged?'One request is reserved for you':'You’re available';
- return `<div class="screen"><header class="hero-header driver-hero"><div class="brand-row"><div class="brand-mark">R</div><span>Raahi Driver</span>${pill('5 demo drivers')}</div><div class="row between greeting"><div><small>${d.name}</small><h1>${state.driverOnline?heading:'You’re offline'}</h1></div><button class="toggle ${state.driverOnline?'on':''}" data-action="toggle-online"><span></span></button></div></header><div class="content-stack overlap"><div class="feature-card driver-picker"><label><small>Demo driver</small><select id="active-driver">${driverOptions(state.activeDriver)}</select></label><span class="vehicle-tag">${d.type==='toto'?'🛺':'🚗'} ${d.seats} seats</span></div><div class="feature-card driver-location"><div><small>Your current location</small><select id="driver-location">${locationOptions(state.driverLocation)}</select></div><button class="locate square">⌖</button></div>${state.driverOnline?`<div class="row between">${section(isEngaged?'Reserved request':'Driver pool',isEngaged?'Priya is engaged only with you':'Other drivers may be serving other passengers')}${pill(isEngaged?'Engaged':'Online',isEngaged?'warn':'good')}</div>${driverRequestCard(d)}${driverPaymentCard(d)}`:`<div class="empty-state"><span>◌</span><h2>You’re offline</h2><p>Go online when you’re ready to receive nearby ride requests.</p></div>`}</div></div>`;
+ const assignedRide=state.ride?.name===d.name ? state.ride : null;
+ const locked=isEngaged || (assignedRide && assignedRide.status!=='completed');
+ const heading=assignedRide
+   ? assignedRide.status==='en_route'?'Go to pickup':assignedRide.status==='arrived'?'Passenger pickup':assignedRide.status==='in_progress'?'Ride in progress':'Ride completed'
+   : isEngaged?'One request is reserved for you':'You’re available';
+ return `<div class="screen"><header class="hero-header driver-hero"><div class="brand-row"><div class="brand-mark">R</div><span>Raahi Driver</span>${pill('5 demo drivers')}</div><div class="row between greeting"><div><small>${d.name}</small><h1>${state.driverOnline?heading:'You’re offline'}</h1></div><button class="toggle ${state.driverOnline?'on':''}" data-action="toggle-online" ${locked?'disabled':''}><span></span></button></div></header><div class="content-stack overlap"><div class="feature-card driver-picker"><label><small>Demo driver</small><select id="active-driver">${driverOptions(state.activeDriver)}</select></label><span class="vehicle-tag">${d.type==='toto'?'🛺':'🚗'} ${d.seats} seats</span></div><div class="feature-card driver-location"><div><small>Your current location</small><select id="driver-location">${locationOptions(state.driverLocation)}</select></div><button class="locate square" disabled>⌖</button></div>${state.driverOnline?`<div class="row between">${section(isEngaged?'Reserved request':assignedRide?'Current ride':'Driver pool',isEngaged?'Priya is engaged only with you':assignedRide?'Passenger and driver share this same ride state':'Waiting for a nearby eligible request')}${pill(isEngaged?'Engaged':assignedRide?.status==='completed'?'Available':'Online',isEngaged?'warn':'good')}</div>${driverRequestCard(d)}${driverPaymentCard(d)}`:`<div class="empty-state"><span>◌</span><h2>You’re offline</h2><p>Go online when you’re ready to receive nearby ride requests.</p></div>`}</div></div>`;
 }
 
 function admin(){
