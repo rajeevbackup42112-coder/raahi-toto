@@ -37,7 +37,12 @@ function bind(){
    }
    if(a==='accept-counter' && state.engagement?.status==='counter') confirmRide(state.engagement.counter);
    if(a==='decline-counter' && state.engagement?.status==='counter') failEngagement('passenger_declined_counter');
-   if(a==='confirm-payment' && state.ride?.name===state.activeDriver) state.paymentConfirmed[state.activeDriver]=true;
+   if(a==='driver-arrived' && state.ride?.name===state.activeDriver && state.ride.status==='en_route') state.ride.status='arrived';
+   if(a==='start-ride' && state.ride?.name===state.activeDriver && state.ride.status==='arrived') state.ride.status='in_progress';
+   if(a==='complete-ride' && state.ride?.name===state.activeDriver && state.ride.status==='in_progress') state.ride.status='completed';
+   if(a==='confirm-payment' && state.ride?.name===state.activeDriver && state.ride.status==='completed') state.paymentConfirmed[state.activeDriver]=true;
+   if(a==='pay-raahi' && state.ride?.status==='completed' && state.payment[state.ride.market]==='raahi') state.raahiPaymentPaid[state.ride.name]=true;
+   if(a==='new-ride') resetRideResponses();
    if(a==='logout') state.loggedIn=false;
    if(a==='login') state.loggedIn=true;
    render();
