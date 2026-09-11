@@ -61,7 +61,7 @@ function passengerBooked(){
    : `<div class="assigned-banner"><small>RIDE COMPLETE</small><h3>You’ve arrived</h3><p>The ride lifecycle is complete. Payment is handled separately below.</p></div>`;
  let paymentCard='';
  if(!completed){
-   paymentCard=`<div class="feature-card payment-card"><div class="row between"><div><small>Payment method</small><h3>${direct?'Pay driver directly':'Pay Raahi'}</h3></div>${pill(direct?'Direct':'Raahi',direct?'warn':'blue')}</div><p>${direct?`After the ride, pay ₹${d.amount} to ${d.name.split(' ')[0]}.`:`Raahi will collect ₹${d.amount} in the payment step.`}</p></div>`;
+   paymentCard=`<div class="feature-card payment-card"><div class="row between"><div><small>Payment method</small><h3>${direct?'Pay driver directly':'Pay Raahi'}</h3></div>${pill(direct?'Direct':'Raahi',direct?'warn':'blue')}</div><p>${direct?`After the ride, pay ₹${d.amount} to ${d.name.split(' ')[0]}.`:`After the ride is completed, pay ₹${d.amount} to Raahi.`}</p></div>`;
  } else if(direct){
    const confirmed=Boolean(state.paymentConfirmed[d.name]);
    paymentCard=`<div class="feature-card payment-card"><div class="row between"><div><small>Payment</small><h3>${confirmed?'Payment confirmed':'Pay driver directly'}</h3></div>${pill(confirmed?'Confirmed':'Direct',confirmed?'good':'warn')}</div><p>${confirmed?`${d.name.split(' ')[0]} confirmed receiving ₹${d.amount}.`:`Pay ₹${d.amount} directly to ${d.name.split(' ')[0]}. Only the driver can confirm receipt in Raahi.`}</p></div>`;

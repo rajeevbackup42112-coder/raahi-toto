@@ -544,7 +544,9 @@ Ride completion and payment resolution are separate concerns.
 
 ### Pay Raahi
 
-Passenger pays Raahi.
+Passenger pays Raahi **after the Ride is COMPLETED**.
+
+The Ride must not wait for prepayment, and payment failure after completion must not move the Ride back to an earlier lifecycle state.
 
 Raahi handles driver settlement separately.
 

@@ -182,8 +182,13 @@ Driver owns `Confirm payment received`.
 Passenger must not be able to mark the driver's receipt as confirmed.
 
 ### PAY_RAAHI
-Passenger sees a Raahi payment action for ₹X.
-Exact timing (before pickup vs after ride) remains a product decision to freeze before real payment integration. UI prototype may simulate it separately from matching.
+Passenger sees the Raahi payment action only **after the Ride is COMPLETED**.
+
+Product rule:
+- matching and ride execution do not wait for passenger payment to Raahi
+- after completion, passenger pays the agreed ₹X to Raahi
+- payment failure/retry does not move the completed Ride back to an earlier ride state
+- driver settlement remains a separate financial lifecycle
 
 ## 10. Cancellation / recovery UI
 
@@ -251,7 +256,6 @@ Passenger view then reflects the same single engagement.
 Every clickable control must map to one clear business intent. If a button cannot be described in one sentence as a business command, it should not exist.
 
 ## 15. Passenger flow decisions intentionally deferred
-- exact PAY_RAAHI payment timing
 - real phone/contact mechanism
 - exact cancellation fees/penalties
 - exact wait-time/search-radius language
