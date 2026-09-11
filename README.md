@@ -1,20 +1,27 @@
 # Raahi ToTo UI Prototype V0.1
 
-Zero-build UI prototype for validating the new Raahi ToTo/Car quotation journey before backend work.
+Zero-build UI prototype for validating the new Raahi ToTo/Car journey before backend work.
+
+## Raahi 3 product source of truth
+
+The canonical product-law baseline is:
+
+- [`docs/RAAHI3_RULEBOOK_V0.1.md`](docs/RAAHI3_RULEBOOK_V0.1.md)
+
+The rulebook captures the target Raahi 3 model: market policy, proximity-gated FIFO, one-passenger/one-driver exclusive engagement, fixed vs negotiated fares, admin boundaries, payment rules, failure handling, expansion rules, and core invariants. If the prototype and rulebook differ, treat the prototype as exploratory UI and the rulebook as the target product decision unless the rule is explicitly reopened.
 
 ## Included
 - Passenger, Driver, and Global Admin prototype views
 - Simulated mobile OTP login
 - ToTo / Car selection with 4 / 5 / 6 / 7-seat car capacity
 - Passenger and driver current locations are independent
-- Passenger proposes a fare
-- Eligible drivers can accept or send a counterquote
-- Passenger sees responses and chooses a driver
+- Market-specific ToTo fare policy controls
+- Passenger proposed fare / driver response UI for negotiation experiments
 - Five switchable hard-coded demo drivers, five passengers, three locations
 - Market-level payment configuration
   - Gomoh default: passenger pays driver directly; driver confirms receipt
   - Dhanbad default: passenger pays Raahi; driver does not collect from passenger
-- Global admin can view local-admin model and configure each market's payment collection mode
+- Global admin can configure local market behaviour
 - Map placeholder for later provider integration
 
 ## Prototype architecture
@@ -26,13 +33,10 @@ No framework, package install, database, Supabase, paid API, or build step is re
 
 This keeps V0.1 cheap and fast while the user journey is still changing.
 
-## Validation status
-Cloud-browser E2E checks pass for both primary paths:
+## Current design direction
+The initial broadcast-quote UI remains useful for visual experimentation, but the Raahi 3 target defined in the rulebook is simpler:
 
-1. ToTo: passenger offer → Ravi accepts → passenger selects Ravi → Gomoh direct payment → driver confirms receipt.
-2. Car: passenger selects 6-seat car → Deepak counterquotes → passenger selects Deepak → Dhanbad payment to Raahi → driver is told not to collect the fare.
-
-The OTP simulation and independent driver-location selection were also exercised.
+**Request → Eligibility → Proximity Pool → FIFO → Exclusive Engagement → Fare Resolution → Ride → Payment**
 
 ## Run
 Serve this directory with any static web server. There is no build command.
