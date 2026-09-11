@@ -1,22 +1,28 @@
 function passengerHome(){
  const market=marketForPickup();
+ const marketActive=state.marketStatus[market]==='active';
+ const vehicleAvailable=isVehicleEnabled(state.vehicle,market);
  const rule=totoFareRule();
  const fixed=isFixedTotoFare();
  const fareCard=fixed
    ? `<div class="feature-card offer-card fixed-fare-card"><div><small>Fixed ToTo fare • ${rule.distance} km</small><h2>₹${rule.amount}</h2><p>${market} policy fixes this distance slab. This fare cannot be negotiated.</p></div>${pill('Fixed fare','good')}</div>`
    : `<div class="feature-card offer-card"><div><small>${state.vehicle==='toto'?'Your offer • '+rule.distance+' km':'Your offer'}</small><h2>₹${state.offer}</h2><p>Raahi will engage one nearby driver at a time.</p></div><div class="fare-controls"><button data-fare="-10">−</button><button data-fare="10">+</button></div></div>`;
- const actionLabel=fixed?`Find a ToTo for ₹${rule.amount}`:state.vehicle==='toto'?`Find a ToTo at ₹${state.offer}`:`Find a car at ₹${state.offer}`;
+ const normalAction=fixed?`Find a ToTo for ₹${rule.amount}`:state.vehicle==='toto'?`Find a ToTo at ₹${state.offer}`:`Find a car at ₹${state.offer}`;
+ const blockedReason=!marketActive?'Market temporarily paused':!vehicleAvailable?`${state.vehicle==='toto'?'ToTo':'Car'} unavailable in ${market}`:state.from===state.to?'Choose a different destination':'';
+ const actionLabel=blockedReason||normalAction;
+ const actionDisabled=Boolean(blockedReason);
  return `<div class="screen"><header class="hero-header"><div class="brand-row"><div class="brand-mark">R</div><span>Raahi</span>${pill('UI V0.2')}</div><div class="row between greeting"><div><small>Good evening</small><h1>Where are you going?</h1></div>${avatar('Priya','small')}</div></header><div class="content-stack overlap">
- <div class="market-strip feature-card"><div><small>Your Raahi market</small><strong>${market}</strong></div>${pill('From pickup','blue')}</div>
+ <div class="market-strip feature-card"><div><small>Your Raahi market</small><strong>${market}</strong></div>${pill(marketActive?'Active':'Paused',marketActive?'good':'warn')}</div>
  <div class="location-card feature-card"><div class="route-visual"><span class="route-dot green"></span><span class="vertical-line"></span><span class="route-dot dark"></span></div><label><small>Your current location</small><select id="from">${locationOptions(state.from)}</select></label><label><small>Destination</small><select id="to">${locationOptions(state.to)}</select></label><button class="locate" data-action="live-location">⌖ Use my live location</button></div>
  <div class="distance-chip">📍 Demo route distance: <strong>${routeDistanceKm()} km</strong></div>
  ${section('Choose your ride',state.vehicle==='toto'?'Local ToTo rules apply automatically':'Choose the car capacity you need')}
- <div class="ride-grid"><button class="ride-option ${state.vehicle==='toto'?'selected':''}" data-vehicle="toto"><span class="icon">🛺</span><strong>ToTo</strong><small>Local ride</small>${state.vehicle==='toto'?'<span class="selected-check">✓</span>':''}</button><button class="ride-option ${state.vehicle==='car'?'selected':''}" data-vehicle="car"><span class="icon">🚗</span><strong>Car</strong><small>Choose capacity</small>${state.vehicle==='car'?'<span class="selected-check">✓</span>':''}</button></div>
+ <div class="ride-grid"><button class="ride-option ${state.vehicle==='toto'?'selected':''}" data-vehicle="toto" ${state.vehicleEnabled[market].toto?'':'disabled'}><span class="icon">🛺</span><strong>ToTo</strong><small>${state.vehicleEnabled[market].toto?'Local ride':'Unavailable'}</small>${state.vehicle==='toto'?'<span class="selected-check">✓</span>':''}</button><button class="ride-option ${state.vehicle==='car'?'selected':''}" data-vehicle="car" ${state.vehicleEnabled[market].car?'':'disabled'}><span class="icon">🚗</span><strong>Car</strong><small>${state.vehicleEnabled[market].car?'Choose capacity':'Unavailable'}</small>${state.vehicle==='car'?'<span class="selected-check">✓</span>':''}</button></div>
  ${state.vehicle==='car'?`<div class="feature-card capacity-card"><small>Car seating capacity</small><div class="segmented">${[4,5,6,7].map(n=>`<button data-seats="${n}" class="${state.seats===n?'active':''}">${n} seats</button>`).join('')}</div></div>`:''}
  ${fareCard}
  ${state.vehicle==='toto'?`<div class="admin-rule-note"><span>ⓘ</span><p><strong>${market} ToTo rule:</strong> ${fixed?`${rule.label} = fixed ₹${rule.amount}.`:`${rule.label} = negotiation.`}</p></div>`:''}
  <div class="admin-rule-note"><span>ⓘ</span><p><strong>Payment:</strong> ${state.payment[market]==='driver'?'Pay the driver directly.':'Pay Raahi.'}</p></div>
- <button class="primary full big" data-action="request-ride" ${state.from===state.to?'disabled':''}>${state.from===state.to?'Choose a different destination':actionLabel}</button><p class="fineprint">Raahi finds one compatible nearby driver at a time. You do not need to compare drivers.</p></div></div>`;
+ ${!marketActive?`<div class="admin-rule-note"><span>!</span><p><strong>${market} is paused:</strong> existing rides continue, but new requests are temporarily stopped.</p></div>`:''}
+ <button class="primary full big" data-action="request-ride" ${actionDisabled?'disabled':''}>${actionLabel}</button><p class="fineprint">Raahi finds one compatible nearby driver at a time. You do not need to compare drivers.</p></div></div>`;
 }
 
 function passengerSearching(){
