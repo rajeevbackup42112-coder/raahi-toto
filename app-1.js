@@ -68,6 +68,7 @@ function totoFareRule(){
 }
 function isFixedTotoFare(){return state.vehicle==='toto' && totoFareRule().mode==='fixed'}
 function currentFare(){const rule=totoFareRule(); return rule.mode==='fixed'?rule.amount:state.offer}
+function driverPickupKm(d){return parseFloat(d.distance)||999}
 function compatibleDrivers(){return drivers.filter(isDriverEligible).sort((a,b)=>a.priority-b.priority)}
 function engagementDriver(){return state.engagement ? drivers.find(d=>d.name===state.engagement.driverName) : null}
 function resetRideResponses(){
@@ -75,10 +76,14 @@ function resetRideResponses(){
   if(state.passengerStep!=='home') state.passengerStep='home';
 }
 function matchNextDriver(){
-  const d=compatibleDrivers().find(x=>!state.excludedDrivers.includes(x.name));
+  const market=marketForPickup();
+  const candidates=compatibleDrivers().filter(x=>!state.excludedDrivers.includes(x.name));
+  const tiers=state.proximity[market][state.vehicle];
+  let d=null, radiusUsed=null;
+  for(const radius of tiers){d=candidates.find(x=>driverPickupKm(x)<=radius);if(d){radiusUsed=radius;break;}}
   if(!d){state.engagement=null;state.noDriver=true;return;}
   state.noDriver=false;
-  state.engagement={driverName:d.name,status:'reviewing',market:marketForPickup(),amount:currentFare(),counter:null};
+  state.engagement={driverName:d.name,status:'reviewing',market,amount:currentFare(),counter:null,radiusUsed};
   state.counterDraft=Math.max(currentFare()+30,210);
 }
 function startPassengerRequest(){
