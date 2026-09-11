@@ -12,16 +12,20 @@ function bind(){
  const to=document.getElementById('to'); if(to) to.onchange=e=>{state.to=e.target.value;resetRideResponses();render()};
  const dl=document.getElementById('driver-location'); if(dl) dl.onchange=e=>{state.driverLocation=e.target.value;render()};
  const ad=document.getElementById('active-driver'); if(ad) ad.onchange=e=>{state.activeDriver=e.target.value;state.driverOnline=true;state.counterDraft=Math.max((state.engagement?.amount||currentFare())+30,210);render()};
- const am=document.getElementById('admin-market'); if(am) am.onchange=e=>{state.market=e.target.value;render()};
- const shortKm=document.getElementById('toto-short-km'); if(shortKm) shortKm.onchange=e=>{const p=state.totoPricing[state.market];p.shortKm=Math.max(.5,+e.target.value||.5);if(p.midKm<=p.shortKm)p.midKm=p.shortKm+.5;render()};
- const shortFare=document.getElementById('toto-short-fare'); if(shortFare) shortFare.onchange=e=>{state.totoPricing[state.market].shortFare=Math.max(10,+e.target.value||10);render()};
- const midKm=document.getElementById('toto-mid-km'); if(midKm) midKm.onchange=e=>{const p=state.totoPricing[state.market];p.midKm=Math.max(p.shortKm+.5,+e.target.value||p.shortKm+.5);render()};
- const midFare=document.getElementById('toto-mid-fare'); if(midFare) midFare.onchange=e=>{state.totoPricing[state.market].midFare=Math.max(10,+e.target.value||10);render()};
+ const ap=document.getElementById('admin-persona'); if(ap) ap.onchange=e=>{state.adminPersona=e.target.value;state.adminNotice='';render()};
+ const am=document.getElementById('admin-market'); if(am) am.onchange=e=>{state.market=e.target.value;state.adminNotice='';render()};
+ const shortKm=document.getElementById('toto-short-km'); if(shortKm) shortKm.onchange=e=>{const p=state.totoPricing[adminMarket()];p.shortKm=Math.max(.5,+e.target.value||.5);if(p.midKm<=p.shortKm)p.midKm=p.shortKm+.5;state.adminNotice='Unsaved fare change';render()};
+ const shortFare=document.getElementById('toto-short-fare'); if(shortFare) shortFare.onchange=e=>{state.totoPricing[adminMarket()].shortFare=Math.max(10,+e.target.value||10);state.adminNotice='Unsaved fare change';render()};
+ const midKm=document.getElementById('toto-mid-km'); if(midKm) midKm.onchange=e=>{const p=state.totoPricing[adminMarket()];p.midKm=Math.max(p.shortKm+.5,+e.target.value||p.shortKm+.5);state.adminNotice='Unsaved fare change';render()};
+ const midFare=document.getElementById('toto-mid-fare'); if(midFare) midFare.onchange=e=>{state.totoPricing[adminMarket()].midFare=Math.max(10,+e.target.value||10);state.adminNotice='Unsaved fare change';render()};
+ document.querySelectorAll('[data-prox-vehicle]').forEach(input=>input.onchange=e=>{const m=adminMarket(),v=e.target.dataset.proxVehicle,i=+e.target.dataset.proxIndex,arr=state.proximity[m][v];arr[i]=Math.max(1,+e.target.value||1);if(arr[1]<arr[0])arr[1]=arr[0];if(arr[2]<arr[1])arr[2]=arr[1];state.adminNotice='Unsaved matching change';render()});
+ document.querySelectorAll('[data-driver-auth]').forEach(b=>b.onclick=()=>{const m=adminMarket(),name=b.dataset.driverAuth;state.driverAuth[m][name]=!state.driverAuth[m][name];state.adminNotice=`${name} ${state.driverAuth[m][name]?'authorized':'suspended'} in ${m}`;render()});
+ document.querySelectorAll('[data-vehicle-toggle]').forEach(b=>b.onclick=()=>{const m=adminMarket(),v=b.dataset.vehicleToggle,other=v==='toto'?'car':'toto';if(state.vehicleEnabled[m][v] && !state.vehicleEnabled[m][other]){state.adminNotice='At least one vehicle type must remain enabled';render();return;}state.vehicleEnabled[m][v]=!state.vehicleEnabled[m][v];state.adminNotice=`${v==='toto'?'ToTo':'Car'} ${state.vehicleEnabled[m][v]?'enabled':'disabled'} in ${m}`;render()});
  document.querySelectorAll('[data-vehicle]').forEach(b=>b.onclick=()=>{state.vehicle=b.dataset.vehicle;resetRideResponses();render()});
  document.querySelectorAll('[data-seats]').forEach(b=>b.onclick=()=>{state.seats=+b.dataset.seats;resetRideResponses();render()});
  document.querySelectorAll('[data-fare]').forEach(b=>b.onclick=()=>{if(isFixedTotoFare())return;state.offer=Math.max(50,state.offer + +b.dataset.fare);state.counterDraft=Math.max(state.offer+30,state.counterDraft);render()});
  document.querySelectorAll('[data-counter]').forEach(b=>b.onclick=()=>{if(isFixedTotoFare())return;state.counterDraft=Math.max(state.engagement?.amount||state.offer,state.counterDraft + +b.dataset.counter);render()});
- document.querySelectorAll('[data-paymode]').forEach(b=>b.onclick=()=>{state.payment[state.market]=b.dataset.paymode;render()});
+ document.querySelectorAll('[data-paymode]').forEach(b=>b.onclick=()=>{state.payment[adminMarket()]=b.dataset.paymode;state.adminNotice=`Payment mode changed for ${adminMarket()}`;render()});
  document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>{
    const a=b.dataset.action;
    if(a==='request-ride') startPassengerRequest();
@@ -43,6 +47,10 @@ function bind(){
    if(a==='confirm-payment' && state.ride?.name===state.activeDriver && state.ride.status==='completed') state.paymentConfirmed[state.activeDriver]=true;
    if(a==='pay-raahi' && state.ride?.status==='completed' && state.payment[state.ride.market]==='raahi') state.raahiPaymentPaid[state.ride.name]=true;
    if(a==='new-ride') resetRideResponses();
+   if(a==='pause-market'){state.marketStatus[adminMarket()]='paused';state.adminNotice=`${adminMarket()} paused for new requests`;}
+   if(a==='resume-market'){state.marketStatus[adminMarket()]='active';state.adminNotice=`${adminMarket()} resumed`;}
+   if(a==='publish-admin') state.adminNotice=`${adminMarket()} policy published in prototype`;
+   if(a==='create-local-admin') state.adminNotice=`Demo local-admin creation started for ${adminMarket()}`;
    if(a==='logout') state.loggedIn=false;
    if(a==='login') state.loggedIn=true;
    render();
